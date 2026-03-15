@@ -1,0 +1,33 @@
+:root {
+  --color-conditioning: #2afe7f;
+  --color-mobility: #fdd333;
+  --color-survival: #f4101b;
+  --node-locked: #444;
+  --bg-dark: #0a0e1a;
+  --bg-panel: #111827;
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: system-ui, sans-serif;
+  background: linear-gradient(180deg, var(--bg-dark), #1a1e2e);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+}
+
+#app {
+  height: 100%;
+}
