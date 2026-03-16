@@ -1,8 +1,8 @@
 <script lang="ts">
   import { buildStore } from '$lib/state/buildStore.svelte';
   import { BASE_SKILL_POINTS, MAX_EXPEDITION_BONUS } from '$lib/data/skillData';
+  import { viewport } from '$lib/stores/viewport.svelte';
 
-  const stats = $derived(buildStore.treeStats);
   const maxBudget = $derived(buildStore.maxBudget);
   const wantedNodes = $derived(buildStore.wantedNodes);
   const fillerNeeded = $derived(buildStore.fillerNeeded);
@@ -13,31 +13,77 @@
   const totalCost = $derived(breakdown.wantedCost + breakdown.prereqCost + fillerTotal);
   const feasible = $derived(totalCost <= maxBudget);
 
+  let shareLabel = $state('Share Build');
+
+  let panelEl: HTMLElement | null = $state(null);
+  let isOverlapping = $state(false);
+  let isHovered = $state(false);
+
+  function checkOverlap(): void {
+    if (!panelEl || viewport.isMobile) { isOverlapping = false; return; }
+    // Find the rightmost rendered node by checking actual bounding rects.
+    const nodes = document.querySelectorAll('g[class*="skill-node"]');
+    if (nodes.length === 0) { isOverlapping = false; return; }
+    let maxRight = 0;
+    nodes.forEach(n => {
+      const right = n.getBoundingClientRect().right;
+      if (right > maxRight) maxRight = right;
+    });
+    // Where the panel's left edge WOULD be when visible (right: 1rem = 16px)
+    const panelLeft = window.innerWidth - panelEl.offsetWidth - 16;
+    // Hide the box a bit before it actually touches nodes (20px buffer)
+    isOverlapping = panelLeft < maxRight + 20;
+  }
+
+  $effect(() => {
+    if (!panelEl || viewport.isMobile) return;
+
+    const observer = new ResizeObserver(() => checkOverlap());
+    observer.observe(document.documentElement);
+    checkOverlap();
+
+    return () => observer.disconnect();
+  });
+
   function updateExpeditionBonus(event: Event): void {
     const next = Number((event.currentTarget as HTMLInputElement).value);
     buildStore.setExpeditionBonus(next);
   }
+
+  async function copyShareUrl(): Promise<void> {
+    if (typeof window === 'undefined') return;
+
+    const url = window.location.href;
+    let copied = false;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      copied = true;
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = url;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      copied = document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+
+    shareLabel = copied ? 'Copied!' : 'Copy failed';
+    setTimeout(() => { shareLabel = 'Share Build'; }, 1500);
+  }
 </script>
 
-<aside class="panel" aria-label="Build info">
-  <section class="block">
-    <div class="section-title">Points per Tree</div>
-    <div class="category-bars">
-      <div class="cat-row">
-        <span class="cat-label cond">Conditioning</span>
-        <span class="cat-pts">{stats.conditioning}</span>
-      </div>
-      <div class="cat-row">
-        <span class="cat-label mob">Mobility</span>
-        <span class="cat-pts">{stats.mobility}</span>
-      </div>
-      <div class="cat-row">
-        <span class="cat-label surv">Survival</span>
-        <span class="cat-pts">{stats.survival}</span>
-      </div>
-    </div>
-  </section>
-
+<aside
+  class="panel"
+  class:drawer={isOverlapping && !viewport.isMobile}
+  class:drawer-open={isOverlapping && !viewport.isMobile && isHovered}
+  bind:this={panelEl}
+  onmouseenter={() => isHovered = true}
+  onmouseleave={() => isHovered = false}
+  aria-label="Build info"
+>
   {#if wantedNodes.length > 0}
     <section class="block">
       <div class="section-title">Build Cost</div>
@@ -95,25 +141,76 @@
       <span class="exp-total">{BASE_SKILL_POINTS} + {buildStore.expeditionBonus} = {maxBudget}</span>
     </div>
   </section>
+
+  <section class="block actions-block">
+    <button type="button" class="action-btn" onclick={copyShareUrl}>{shareLabel}</button>
+    <button type="button" class="action-btn danger-btn" onclick={() => buildStore.resetAll()}>Reset</button>
+  </section>
 </aside>
 
 <style>
   .panel {
-    height: 100%;
-    overflow: auto;
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 40;
+    width: 18rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    background: linear-gradient(160deg, rgba(9, 13, 26, 0.92), rgba(12, 18, 34, 0.96));
+    backdrop-filter: blur(12px);
+    border: 1px solid color-mix(in srgb, #91a9cf, transparent 72%);
+    border-radius: 0.8rem;
+    padding: 0.65rem;
     display: flex;
     flex-direction: column;
-    gap: 0.7rem;
-    padding: 0.15rem;
+    gap: 0.6rem;
+    transition: right 0.25s ease;
+  }
+
+  .panel.drawer {
+    right: -16.5rem; /* mostly hidden, leaving ~1.5rem for the tab */
+  }
+
+  .panel.drawer.drawer-open {
+    right: 0; /* flush to viewport edge — prevents hover loop in the gap */
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    padding-right: calc(0.65rem + 1rem); /* compensate visually for the lost margin */
+  }
+
+  /* Drawer tab visual */
+  .panel.drawer::before {
+    content: '⟨';
+    position: absolute;
+    left: -1.4rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.4rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(9, 13, 26, 0.92);
+    border: 1px solid color-mix(in srgb, #91a9cf, transparent 72%);
+    border-right: none;
+    border-radius: 0.4rem 0 0 0.4rem;
+    color: #8ea8cc;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .panel.drawer.drawer-open::before {
+    content: '⟩';
   }
 
   .block {
     border: 1px solid color-mix(in srgb, #93acd0, transparent 74%);
     border-radius: 0.7rem;
     background: linear-gradient(150deg, rgba(15, 22, 40, 0.84), rgba(11, 17, 29, 0.9));
-    padding: 0.7rem;
+    padding: 0.55rem;
     display: grid;
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
 
   .section-title {
@@ -122,23 +219,6 @@
     letter-spacing: 0.08em;
     color: #8ea0bd;
   }
-
-  .category-bars {
-    display: grid;
-    gap: 0.35rem;
-  }
-
-  .cat-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.82rem;
-  }
-
-  .cat-label { color: #95a8c6; }
-  .cat-label.cond { color: #2afe7f; }
-  .cat-label.mob { color: #fdd333; }
-  .cat-label.surv { color: #f4101b; }
-  .cat-pts { color: #d8e6f8; font-weight: 600; }
 
   .cost-total {
     display: flex;
@@ -218,5 +298,29 @@
   .exp-total {
     color: #8a9fb8;
     font-size: 0.7rem;
+  }
+
+  .actions-block {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .action-btn {
+    flex: 1;
+    border: 1px solid color-mix(in srgb, #8aa9d4, transparent 55%);
+    border-radius: 0.5rem;
+    background: linear-gradient(145deg, #162744, #0f1d33);
+    color: #eaf3ff;
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 0.48rem 0.66rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .danger-btn {
+    border-color: color-mix(in srgb, #f39b9b, transparent 45%);
+    background: linear-gradient(145deg, #371f29, #2b1821);
+    color: #ffd4d4;
   }
 </style>

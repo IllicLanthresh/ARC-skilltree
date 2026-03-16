@@ -18,14 +18,14 @@ export const TREE_COLORS: Record<SkillCategory, string> = {
   SURVIVAL: '#f4101b',
 };
 
-export const SVG_VIEWBOX = '0 0 1200 980';
+export const SVG_VIEWBOX = '0 0 1200 1040';
 
 const CATEGORIES: SkillCategory[] = ['CONDITIONING', 'MOBILITY', 'SURVIVAL'];
 const SVG_WIDTH = 1200;
 const COLUMN_GAP = 24;
 const COLUMN_INNER_PAD = 50;
 const PADDING_TOP = 60;
-const PADDING_BOTTOM = 100;
+const PADDING_BOTTOM = 160;
 
 export function computeNodePositions(nodes: SkillNode[]): Record<string, PositionedNode> {
   if (nodes.length === 0) return {};
@@ -34,7 +34,7 @@ export function computeNodePositions(nodes: SkillNode[]): Record<string, Positio
   const minY = Math.min(...allYs);
   const maxY = Math.max(...allYs);
   const rangeY = maxY - minY || 1;
-  const availableHeight = 980 - PADDING_TOP - PADDING_BOTTOM;
+  const availableHeight = 1040 - PADDING_TOP - PADDING_BOTTOM;
   const scaleY = availableHeight / rangeY;
 
   const columnWidth = (SVG_WIDTH - (CATEGORIES.length - 1) * COLUMN_GAP) / CATEGORIES.length;
@@ -69,11 +69,11 @@ export function computeNodePositions(nodes: SkillNode[]): Record<string, Positio
 export function computeTreeLabelPositions(
   nodes: SkillNode[],
   positions: Record<string, PositionedNode>
-): { title: string; x: number; color: string }[] {
+): { title: string; key: 'conditioning' | 'mobility' | 'survival'; x: number; color: string }[] {
   return CATEGORIES.map((cat) => {
     const catNodes = nodes.filter((n) => n.category === cat);
     const avgX = catNodes.reduce((sum, n) => sum + (positions[n.id]?.x ?? 0), 0) / (catNodes.length || 1);
-    return { title: cat, x: avgX, color: TREE_COLORS[cat] };
+    return { title: cat, key: cat.toLowerCase() as 'conditioning' | 'mobility' | 'survival', x: avgX, color: TREE_COLORS[cat] };
   });
 }
 

@@ -6,12 +6,20 @@
   import { computeNodePositions, computeConnectionPaths, computeTreeLabelPositions, NODE_SIZES, TREE_COLORS, SVG_VIEWBOX } from '$lib/layout/treeLayout';
   import { getIconUrl } from '$lib/utils/iconUrl';
   import type { TooltipData } from '$lib/components/Tooltip.svelte';
+  import { untrack } from 'svelte';
 
   type HoverCallback = (next: TooltipData | null) => void;
 
-  let { onHover = (() => {}) as HoverCallback } = $props<{ onHover?: HoverCallback }>();
+  type TreeStats = { conditioning: number; mobility: number; survival: number; total: number };
+
+  let {
+    onHover = (() => {}) as HoverCallback,
+    treeStats = { conditioning: 0, mobility: 0, survival: 0, total: 0 },
+    mobileActiveTree = null as 'conditioning' | 'mobility' | 'survival' | null
+  } = $props<{ onHover?: HoverCallback; treeStats?: TreeStats; mobileActiveTree?: 'conditioning' | 'mobility' | 'survival' | null }>();
 
   let hoveredNodeId = $state<string | null>(null);
+  let activeStepper = $state<string | null>(null);
 
   const positions = computeNodePositions(skillNodes);
   const connections = computeConnectionPaths(skillNodes, positions);
@@ -41,6 +49,66 @@
     return map;
   });
 
+  const TREE_VIEW_X: Record<'conditioning' | 'mobility' | 'survival', number> = {
+    conditioning: 0,
+    mobility: 408,
+    survival: 816,
+  };
+
+  const TREE_VIEW_WIDTH = 420;
+  const TREE_VIEW_HEIGHT = 1040;
+
+  let animatedViewBoxX = $state(0);
+  let isAnimating = $state(false);
+  let targetX = $state(0);
+
+  const currentViewBox = $derived(
+    mobileActiveTree
+      ? `${animatedViewBoxX} 0 ${TREE_VIEW_WIDTH} ${TREE_VIEW_HEIGHT}`
+      : SVG_VIEWBOX
+  );
+
+  $effect(() => {
+    const tree = mobileActiveTree;
+    if (!tree) {
+      untrack(() => { animatedViewBoxX = 0; });
+      return;
+    }
+    const newTargetX = TREE_VIEW_X[tree as 'conditioning' | 'mobility' | 'survival'];
+    untrack(() => {
+      targetX = newTargetX;
+      activeStepper = null;
+      if (!isAnimating) animateToTarget();
+    });
+  });
+
+  function animateToTarget() {
+    if (isAnimating) return;
+    isAnimating = true;
+    const startX = animatedViewBoxX;
+    const endX = targetX;
+    if (startX === endX) {
+      isAnimating = false;
+      return;
+    }
+    const duration = 300;
+    const start = performance.now();
+
+    function step(now: number) {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      animatedViewBoxX = startX + (endX - startX) * eased;
+      if (t < 1) {
+        requestAnimationFrame(step);
+      } else {
+        animatedViewBoxX = endX;
+        isAnimating = false;
+        if (targetX !== endX) animateToTarget();
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
   const GATE_RING_STROKE = 5;
 
   function collectAncestors(startNodeId: string): Set<string> {
@@ -68,12 +136,28 @@
 
   function handleNodeClick(event: MouseEvent, node: SkillNode): void {
     event.preventDefault();
+    if (mobileActiveTree !== null) {
+      // Mobile: toggle stepper
+      activeStepper = activeStepper === node.id ? null : node.id;
+      return;
+    }
+    // Desktop: allocate directly (unchanged)
     buildStore.incrementWanted(node.id);
   }
 
   function handleNodeContextMenu(event: MouseEvent, node: SkillNode): void {
     event.preventDefault();
     buildStore.decrementWanted(node.id);
+  }
+
+  function handleStepperAdd(nodeId: string, e: Event): void {
+    e.stopPropagation();
+    buildStore.incrementWanted(nodeId);
+  }
+
+  function handleStepperRemove(nodeId: string, e: Event): void {
+    e.stopPropagation();
+    buildStore.decrementWanted(nodeId);
   }
 
   function handleNodeKeydown(event: KeyboardEvent, node: SkillNode): void {
@@ -140,24 +224,17 @@
   }
 </script>
 
-<svg viewBox={SVG_VIEWBOX} role="img" aria-label="ARC Raiders skill tree" class="tree-svg">
+<svg viewBox={currentViewBox} role="img" aria-label="ARC Raiders skill tree" class="tree-svg" class:mobile={mobileActiveTree !== null}>
   <defs>
-    <linearGradient id="treeBackground" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#0a0e1a" />
-      <stop offset="100%" stop-color="#1a1e2e" />
-    </linearGradient>
     <pattern id="noisePattern" width="60" height="60" patternUnits="userSpaceOnUse">
       <circle cx="6" cy="8" r="1" fill="rgba(255,255,255,0.05)" />
       <circle cx="25" cy="32" r="0.8" fill="rgba(255,255,255,0.04)" />
       <circle cx="48" cy="17" r="0.9" fill="rgba(255,255,255,0.03)" />
       <circle cx="37" cy="49" r="0.9" fill="rgba(255,255,255,0.03)" />
     </pattern>
-
-
   </defs>
 
-  <rect x="0" y="0" width="1200" height="980" fill="url(#treeBackground)" pointer-events="none" />
-  <rect x="0" y="0" width="1200" height="980" fill="url(#noisePattern)" opacity="0.32" pointer-events="none" />
+  <rect x="0" y="0" width="1200" height="1040" fill="url(#noisePattern)" opacity="0.32" pointer-events="none" />
 
   <g class="connections">
     {#each connections as connection (connection.from + '_' + connection.to)}
@@ -175,6 +252,17 @@
       />
     {/each}
   </g>
+
+  {#if activeStepper !== null}
+    <rect
+      x="0" y="0" width="1200" height="1040"
+      fill="transparent"
+      role="presentation"
+      onclick={() => activeStepper = null}
+      onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') activeStepper = null; }}
+      style="cursor: default;"
+    />
+  {/if}
 
   <g class="nodes">
     {#each skillNodes as node (node.id)}
@@ -267,12 +355,57 @@
           </g>
         {/if}
       </g>
+
+      {#if activeStepper === node.id && mobileActiveTree !== null}
+        {@const stepperColor = TREE_COLORS[node.category.toUpperCase() as keyof typeof TREE_COLORS] || '#8ea8cc'}
+        <g
+          transform={`translate(${pos.x - 48}, ${pos.y})`}
+          onclick={(e: MouseEvent) => handleStepperRemove(node.id, e)}
+          onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') handleStepperRemove(node.id, e); }}
+          role="button"
+          tabindex="0"
+          aria-label={`Decrease ${node.name} level`}
+          style="cursor: pointer;"
+          class="stepper-btn"
+        >
+          <circle r="20" fill="rgba(9,13,26,0.92)" stroke={stepperColor} stroke-width="1.5" />
+          <text
+            text-anchor="middle"
+            dominant-baseline="central"
+            fill={stepperColor}
+            font-size="22"
+            font-weight="bold"
+            pointer-events="none"
+          >−</text>
+        </g>
+        <g
+          transform={`translate(${pos.x + 48}, ${pos.y})`}
+          onclick={(e: MouseEvent) => handleStepperAdd(node.id, e)}
+          onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') handleStepperAdd(node.id, e); }}
+          role="button"
+          tabindex="0"
+          aria-label={`Increase ${node.name} level`}
+          style="cursor: pointer;"
+          class="stepper-btn"
+        >
+          <circle r="20" fill="rgba(9,13,26,0.92)" stroke={stepperColor} stroke-width="1.5" />
+          <text
+            text-anchor="middle"
+            dominant-baseline="central"
+            fill={stepperColor}
+            font-size="22"
+            font-weight="bold"
+            pointer-events="none"
+          >+</text>
+        </g>
+      {/if}
     {/each}
   </g>
 
   <g class="tree-labels" aria-hidden="true">
     {#each TREE_LABELS as label (label.title)}
-      <text x={label.x} y="950" fill={label.color}>{label.title}</text>
+      <text x={label.x} y="955" font-size="20" font-weight="bold" text-anchor="middle" fill={label.color}>{label.title}</text>
+      <text x={label.x} y="1015" font-size="46" font-weight="900" text-anchor="middle" fill={label.color}>{treeStats[label.key]}</text>
     {/each}
   </g>
 </svg>
@@ -285,6 +418,10 @@
     display: block;
     user-select: none;
     -webkit-user-select: none;
+  }
+
+  .tree-svg.mobile {
+    touch-action: none;
   }
 
   .connections path {
@@ -469,9 +606,7 @@
 
   .tree-labels text {
     text-anchor: middle;
-    font-size: 16px;
     letter-spacing: 0.12em;
-    font-weight: 700;
     opacity: 0.92;
   }
 
@@ -516,6 +651,10 @@
 
   .branch-btn.active text {
     fill: #e8f4ff;
+  }
+
+  .stepper-btn {
+    user-select: none;
   }
 
   @keyframes wantedPulse {
