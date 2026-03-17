@@ -6,6 +6,7 @@
   import { computeNodePositions, computeConnectionPaths, computeTreeLabelPositions, NODE_SIZES, TREE_COLORS, SVG_VIEWBOX } from '$lib/layout/treeLayout';
   import { getIconUrl } from '$lib/utils/iconUrl';
   import type { TooltipData } from '$lib/components/Tooltip.svelte';
+  import { viewport } from '$lib/stores/viewport.svelte';
   import { untrack } from 'svelte';
 
   type HoverCallback = (next: TooltipData | null) => void;
@@ -297,7 +298,7 @@
           </g>
         {/if}
 
-        {#if mobileActiveTree !== null && wantedLevelMap.has(node.id)}
+        {#if (mobileActiveTree !== null || viewport.isTouch) && wantedLevelMap.has(node.id)}
           <g
             class="mobile-minus"
             transform={`translate(${-radius - 8} ${-radius + 8})`}

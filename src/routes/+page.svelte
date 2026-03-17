@@ -149,7 +149,7 @@
   </div>
 {/if}
 
-{#if !viewport.isMobile && !tutorialStore.isActive}<Tooltip data={hoveredNode} />{/if}
+{#if !viewport.isMobile && !viewport.isTouch && !tutorialStore.isActive}<Tooltip data={hoveredNode} />{/if}
 
 {#if !viewport.isMobile}<TutorialOverlay />{/if}
 

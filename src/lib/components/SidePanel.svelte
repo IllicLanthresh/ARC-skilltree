@@ -19,6 +19,7 @@
   let panelEl: HTMLElement | null = $state(null);
   let isOverlapping = $state(false);
   let isHovered = $state(false);
+  let isOpenTouch = $state(false);
 
   function checkOverlap(): void {
     if (!panelEl || viewport.isMobile) { isOverlapping = false; return; }
@@ -77,81 +78,100 @@
   }
 </script>
 
+{#if viewport.isTouch && !viewport.isMobile && isOpenTouch}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="panel-backdrop" onclick={() => { isOpenTouch = false; }}></div>
+{/if}
 <aside
   class="panel"
-  class:drawer={isOverlapping && !viewport.isMobile}
-  class:drawer-open={isOverlapping && !viewport.isMobile && isHovered}
+  class:drawer={(isOverlapping || viewport.isTouch) && !viewport.isMobile}
+  class:drawer-open={(isOverlapping || viewport.isTouch) && !viewport.isMobile && (viewport.isTouch ? isOpenTouch : isHovered)}
   bind:this={panelEl}
-  onmouseenter={() => isHovered = true}
-  onmouseleave={() => isHovered = false}
+  onmouseenter={() => { if (!viewport.isTouch) isHovered = true; }}
+  onmouseleave={() => { if (!viewport.isTouch) isHovered = false; }}
   aria-label="Build info"
   data-tutorial-target="panel"
 >
-  {#if wantedNodes.length > 0}
-    <section class="block" data-tutorial-target="cost-section">
-      <div class="section-title">Build Cost</div>
-      <div class="cost-total" class:over-budget={!feasible}>
-        <span>Total</span>
-        <strong>{totalCost} / {maxBudget}</strong>
-      </div>
-
-      <div class="cost-breakdown">
-        <div class="cost-row">
-          <span>Your selections</span>
-          <span>{breakdown.wantedCost}</span>
+  {#if viewport.isTouch && !viewport.isMobile}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="drawer-tab" onclick={() => { isOpenTouch = !isOpenTouch; }}>
+      {isOpenTouch ? '⟩' : '⟨'}
+    </div>
+  {/if}
+  <div class="panel-scroll">
+    {#if wantedNodes.length > 0}
+      <section class="block" data-tutorial-target="cost-section">
+        <div class="section-title">Build Cost</div>
+        <div class="cost-total" class:over-budget={!feasible}>
+          <span>Total</span>
+          <strong>{totalCost} / {maxBudget}</strong>
         </div>
-        {#if breakdown.prereqCost > 0}
-          <div class="cost-row prereq">
-            <span>Required path</span>
-            <span>{breakdown.prereqCost}</span>
-          </div>
-        {/if}
-        {#if fillerTotal > 0}
-          <div class="cost-row filler">
-            <span>Points to unlock gates</span>
-            <span>+{fillerTotal}</span>
-          </div>
-          {#each gateDetails as gate (gate.nodeId)}
-            <div class="cost-detail">
-              <span>{gate.nodeName} ({gate.pointsBefore}/{gate.threshold})</span>
-              <span>+{gate.pointsNeeded}</span>
-            </div>
-          {/each}
-        {/if}
-      </div>
 
-      <div class="cost-verdict">
-        {#if feasible}
-          <span class="verdict-ok">{maxBudget - totalCost} points remaining</span>
-        {:else}
-          <span class="verdict-bad">Over budget by {totalCost - maxBudget}</span>
-        {/if}
+        <div class="cost-breakdown">
+          <div class="cost-row">
+            <span>Your selections</span>
+            <span>{breakdown.wantedCost}</span>
+          </div>
+          {#if breakdown.prereqCost > 0}
+            <div class="cost-row prereq">
+              <span>Required path</span>
+              <span>{breakdown.prereqCost}</span>
+            </div>
+          {/if}
+          {#if fillerTotal > 0}
+            <div class="cost-row filler">
+              <span>Points to unlock gates</span>
+              <span>+{fillerTotal}</span>
+            </div>
+            {#each gateDetails as gate (gate.nodeId)}
+              <div class="cost-detail">
+                <span>{gate.nodeName} ({gate.pointsBefore}/{gate.threshold})</span>
+                <span>+{gate.pointsNeeded}</span>
+              </div>
+            {/each}
+          {/if}
+        </div>
+
+        <div class="cost-verdict">
+          {#if feasible}
+            <span class="verdict-ok">{maxBudget - totalCost} points remaining</span>
+          {:else}
+            <span class="verdict-bad">Over budget by {totalCost - maxBudget}</span>
+          {/if}
+        </div>
+      </section>
+    {/if}
+
+    <section class="block expedition-block" data-tutorial-target="expedition-section">
+      <label class="exp-label" for="expedition-input">Expedition Bonus</label>
+      <div class="exp-row">
+        <input
+          id="expedition-input"
+          type="number"
+          min="0"
+          max={MAX_EXPEDITION_BONUS}
+          value={buildStore.expeditionBonus}
+          oninput={updateExpeditionBonus}
+        />
+        <span class="exp-total">{BASE_SKILL_POINTS} + {buildStore.expeditionBonus} = {maxBudget}</span>
       </div>
     </section>
-  {/if}
 
-  <section class="block expedition-block" data-tutorial-target="expedition-section">
-    <label class="exp-label" for="expedition-input">Expedition Bonus</label>
-    <div class="exp-row">
-      <input
-        id="expedition-input"
-        type="number"
-        min="0"
-        max={MAX_EXPEDITION_BONUS}
-        value={buildStore.expeditionBonus}
-        oninput={updateExpeditionBonus}
-      />
-      <span class="exp-total">{BASE_SKILL_POINTS} + {buildStore.expeditionBonus} = {maxBudget}</span>
-    </div>
-  </section>
-
-  <section class="block actions-block" data-tutorial-target="actions-section">
-    <button type="button" class="action-btn" onclick={copyShareUrl}>{shareLabel}</button>
-    <button type="button" class="action-btn danger-btn" onclick={() => buildStore.resetAll()}>Reset</button>
-  </section>
+    <section class="block actions-block" data-tutorial-target="actions-section">
+      <button type="button" class="action-btn" onclick={copyShareUrl}>{shareLabel}</button>
+      <button type="button" class="action-btn danger-btn" onclick={() => buildStore.resetAll()}>Reset</button>
+    </section>
+  </div>
 </aside>
 
 <style>
+  .panel-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgba(0, 0, 0, 0.3);
+  }
+
   .panel {
     position: fixed;
     top: 1rem;
@@ -159,7 +179,7 @@
     z-index: 40;
     width: 18rem;
     max-height: calc(100vh - 2rem);
-    overflow-y: auto;
+    overflow: visible;
     background: linear-gradient(160deg, rgba(9, 13, 26, 0.92), rgba(12, 18, 34, 0.96));
     backdrop-filter: blur(12px);
     border: 1px solid color-mix(in srgb, #91a9cf, transparent 72%);
@@ -169,6 +189,14 @@
     flex-direction: column;
     gap: 0.6rem;
     transition: right 0.25s ease;
+  }
+
+  .panel-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 2rem - 1.3rem);
   }
 
   .panel.drawer {
@@ -205,6 +233,30 @@
 
   .panel.drawer.drawer-open::before {
     content: '⟩';
+  }
+
+  .drawer-tab {
+    position: absolute;
+    left: -1.5rem;
+    bottom: 0.5rem;
+    width: 1.5rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, rgba(9, 13, 26, 0.92), rgba(12, 18, 34, 0.96));
+    border: 1px solid color-mix(in srgb, #91a9cf, transparent 72%);
+    border-right: none;
+    border-radius: 0.4rem 0 0 0.4rem;
+    color: #8ea8cc;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  @media (pointer: coarse) {
+    .panel.drawer::before {
+      display: none;
+    }
   }
 
   .block {
