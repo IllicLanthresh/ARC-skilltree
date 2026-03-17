@@ -336,9 +336,11 @@
         {#if orChoiceMap.has(node.id)}
           {@const choice = orChoiceMap.get(node.id)!}
           {@const btnY = radius + 30}
+          {@const leftOptIdx = (positions[choice.options[0]?.[0]]?.x ?? 0) <= (positions[choice.options[1]?.[0]]?.x ?? 0) ? 0 : 1}
           <g class="branch-selector" transform={`translate(0 ${btnY})`}>
             {#each choice.options as _option, optIdx (`branch-${node.id}-${optIdx}`)}
-              {@const isSelected = choice.chosenOptionIndex === optIdx}
+              {@const mappedIdx = optIdx === 0 ? leftOptIdx : 1 - leftOptIdx}
+              {@const isSelected = choice.chosenOptionIndex === mappedIdx}
               {@const btnX = (optIdx - (choice.options.length - 1) / 2) * 24}
               <g
                 class="branch-btn"
@@ -346,8 +348,8 @@
                 role="button"
                 tabindex="0"
                 transform={`translate(${btnX} 0)`}
-                onclick={(e: MouseEvent) => { e.stopPropagation(); buildStore.setPathOverride(node.id, optIdx); }}
-                onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter') { e.stopPropagation(); buildStore.setPathOverride(node.id, optIdx); } }}
+                onclick={(e: MouseEvent) => { e.stopPropagation(); buildStore.setPathOverride(node.id, mappedIdx); }}
+                onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter') { e.stopPropagation(); buildStore.setPathOverride(node.id, mappedIdx); } }}
               >
                 <circle r="8" />
                 <text x="0" y="1" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="currentColor">{optIdx === 0 ? 'L' : 'R'}</text>
