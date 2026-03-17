@@ -3,6 +3,7 @@ import { skillNodeMap, BASE_SKILL_POINTS, MAX_EXPEDITION_BONUS } from '$lib/data
 import { computeMultiTargetPaths } from '$lib/algorithms/pathfinder';
 import { calculateFillerNeeded, calculateGateDetails, getTreeStats } from '$lib/algorithms/budget';
 import { loadFromUrl, syncToUrl } from '$lib/utils/urlState';
+import { trackEvent } from '$lib/analytics';
 
 let wantedNodes = $state<WantedNode[]>([]);
 let expeditionBonus = $state(0);
@@ -10,6 +11,9 @@ let pathOverrides = $state<Map<string, number>>(new Map());
 
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
 let skipNextUrlSync = false;
+
+let hasTrackedStart = false;
+let hasTrackedComplete = false;
 
 let savedWantedNodes: typeof wantedNodes | null = null;
 let savedExpeditionBonus: typeof expeditionBonus | null = null;
@@ -99,11 +103,23 @@ function initEffects() {
 
     return () => { if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; } };
   });
+
+  $effect(() => {
+    if (hasTrackedComplete) return;
+    if (wantedNodes.length === 0) return;
+    const fillerTotal = (fillerNeeded.conditioning ?? 0) + (fillerNeeded.mobility ?? 0) + (fillerNeeded.survival ?? 0);
+    const totalCost = costBreakdown.wantedCost + costBreakdown.prereqCost + fillerTotal;
+    if (totalCost > 0 && totalCost >= maxBudget) {
+      hasTrackedComplete = true;
+      trackEvent('completed_build', 'Completed Build');
+    }
+  });
 }
 
 function incrementWanted(nodeId: string) {
   const node = skillNodeMap.get(nodeId);
   if (!node) return;
+  const wasPreviouslyEmpty = wantedNodes.length === 0;
   const existing = wantedNodes.find((w) => w.skillId === nodeId);
   if (!existing) {
     wantedNodes = [...wantedNodes, { skillId: nodeId, targetLevel: 1 }];
@@ -112,6 +128,11 @@ function incrementWanted(nodeId: string) {
       w.skillId === nodeId ? { ...w, targetLevel: w.targetLevel + 1 } : w
     );
   }
+  if (wasPreviouslyEmpty && wantedNodes.length > 0 && !hasTrackedStart) {
+    hasTrackedStart = true;
+    trackEvent('started_build', 'Started Build');
+  }
+  trackEvent('skill_level_up', node.name);
 }
 
 function decrementWanted(nodeId: string) {
@@ -124,6 +145,8 @@ function decrementWanted(nodeId: string) {
       w.skillId === nodeId ? { ...w, targetLevel: w.targetLevel - 1 } : w
     );
   }
+  const downNode = skillNodeMap.get(nodeId);
+  if (downNode) trackEvent('skill_level_down', downNode.name);
 }
 
 function removeWanted(nodeId: string) {
@@ -152,6 +175,7 @@ function setExpeditionBonus(value: number) {
 }
 
 function resetAll() {
+  if (wantedNodes.length > 0) trackEvent('reset_build', 'Reset Build');
   wantedNodes = [];
   expeditionBonus = 0;
   pathOverrides = new Map();

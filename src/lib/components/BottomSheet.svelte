@@ -1,6 +1,7 @@
 <script lang="ts">
   import { buildStore } from '$lib/state/buildStore.svelte';
   import { BASE_SKILL_POINTS, MAX_EXPEDITION_BONUS } from '$lib/data/skillData';
+  import { trackEvent } from '$lib/analytics';
 
   interface Props {
     activeTree: 'conditioning' | 'mobility' | 'survival';
@@ -63,6 +64,7 @@
       copied = document.execCommand('copy');
       document.body.removeChild(textarea);
     }
+    if (copied) trackEvent('shared_build', 'Shared Build');
     shareLabel = copied ? 'Copied!' : 'Copy failed';
     setTimeout(() => { shareLabel = 'Share Build'; }, 1500);
   }

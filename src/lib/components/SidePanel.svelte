@@ -2,6 +2,7 @@
   import { buildStore } from '$lib/state/buildStore.svelte';
   import { BASE_SKILL_POINTS, MAX_EXPEDITION_BONUS } from '$lib/data/skillData';
   import { viewport } from '$lib/stores/viewport.svelte';
+  import { trackEvent } from '$lib/analytics';
 
   const maxBudget = $derived(buildStore.maxBudget);
   const wantedNodes = $derived(buildStore.wantedNodes);
@@ -70,6 +71,7 @@
       document.body.removeChild(textarea);
     }
 
+    if (copied) trackEvent('shared_build', 'Shared Build');
     shareLabel = copied ? 'Copied!' : 'Copy failed';
     setTimeout(() => { shareLabel = 'Share Build'; }, 1500);
   }

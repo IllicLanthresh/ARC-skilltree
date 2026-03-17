@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { TUTORIAL_STEPS, TOTAL_STEPS } from '$lib/data/tutorialSteps';
 import { buildStore } from '$lib/state/buildStore.svelte';
+import { trackEvent } from '$lib/analytics';
 import type { WantedNode } from '$lib/types';
 
 const STORAGE_KEY = 'arc-tutorial-completed';
@@ -61,6 +62,7 @@ function prevStep() {
 }
 
 function skip() {
+  trackEvent('tutorial_skipped', `Skipped at step ${currentStepIndex + 1}`);
   buildStore.restoreState();
   isActive = false;
   stepSnapshots = [];
@@ -68,6 +70,7 @@ function skip() {
 }
 
 function complete() {
+  trackEvent('tutorial_completed', 'Tutorial Completed');
   buildStore.restoreState();
   isActive = false;
   stepSnapshots = [];
