@@ -77,10 +77,7 @@
   const feasible = $derived(totalCost <= maxBudget);
   const gateDetails = $derived(buildStore.gateDetails);
 
-  function updateExpeditionBonus(event: Event): void {
-    const next = Number((event.currentTarget as HTMLInputElement).value);
-    buildStore.setExpeditionBonus(next);
-  }
+
 
   async function copyShareUrl(): Promise<void> {
     if (typeof window === 'undefined') return;
@@ -152,16 +149,13 @@
     style="max-height: {openAmount * 60}vh; {isDragging ? '' : 'transition: max-height 0.3s ease;'}"
   >
     <section class="sheet-block">
-      <label class="block-label" for="exp-input-mobile">Expedition Bonus</label>
+      <label class="block-label">Expedition Bonus</label>
       <div class="exp-row">
-        <input
-          id="exp-input-mobile"
-          type="number"
-          min="0"
-          max={MAX_EXPEDITION_BONUS}
-          value={buildStore.expeditionBonus}
-          oninput={updateExpeditionBonus}
-        />
+        <div class="exp-stepper">
+          <button class="exp-step-btn" onclick={() => buildStore.setExpeditionBonus(buildStore.expeditionBonus - 1)} aria-label="Decrease expedition bonus">−</button>
+          <span class="exp-value">{buildStore.expeditionBonus}</span>
+          <button class="exp-step-btn" onclick={() => buildStore.setExpeditionBonus(buildStore.expeditionBonus + 1)} aria-label="Increase expedition bonus">+</button>
+        </div>
         <span class="exp-total">{BASE_SKILL_POINTS} + {buildStore.expeditionBonus} = {maxBudget}</span>
       </div>
     </section>
@@ -341,14 +335,45 @@
     gap: 0.5rem;
   }
 
-  .exp-row input {
-    width: 4rem;
-    border: 1px solid color-mix(in srgb, #8eaad1, transparent 66%);
-    border-radius: 0.35rem;
-    background: rgba(9, 14, 24, 0.8);
+  .exp-stepper {
+    display: flex;
+    align-items: center;
+    border: 1px solid color-mix(in srgb, #8eaad1, transparent 60%);
+    border-radius: 0.45rem;
+    background: rgba(9, 14, 24, 0.7);
+    overflow: hidden;
+  }
+
+  .exp-step-btn {
+    background: rgba(100, 150, 220, 0.08);
+    border: none;
+    color: #8eb0d8;
+    font-size: 0.85rem;
+    font-weight: 700;
+    width: 1.6rem;
+    height: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .exp-step-btn:hover {
+    background: rgba(100, 150, 220, 0.2);
+  }
+
+  .exp-step-btn:active {
+    background: rgba(100, 150, 220, 0.3);
+  }
+
+  .exp-value {
+    min-width: 1.8rem;
+    text-align: center;
+    font-size: 0.82rem;
+    font-weight: 600;
     color: #e6f1ff;
-    padding: 0.28rem 0.38rem;
-    font-size: 0.78rem;
+    padding: 0 0.15rem;
   }
 
   .exp-total {
