@@ -83,9 +83,10 @@
   onmouseenter={() => isHovered = true}
   onmouseleave={() => isHovered = false}
   aria-label="Build info"
+  data-tutorial-target="panel"
 >
   {#if wantedNodes.length > 0}
-    <section class="block">
+    <section class="block" data-tutorial-target="cost-section">
       <div class="section-title">Build Cost</div>
       <div class="cost-total" class:over-budget={!feasible}>
         <span>Total</span>
@@ -127,7 +128,7 @@
     </section>
   {/if}
 
-  <section class="block expedition-block">
+  <section class="block expedition-block" data-tutorial-target="expedition-section">
     <label class="exp-label" for="expedition-input">Expedition Bonus</label>
     <div class="exp-row">
       <input
@@ -142,7 +143,7 @@
     </div>
   </section>
 
-  <section class="block actions-block">
+  <section class="block actions-block" data-tutorial-target="actions-section">
     <button type="button" class="action-btn" onclick={copyShareUrl}>{shareLabel}</button>
     <button type="button" class="action-btn danger-btn" onclick={() => buildStore.resetAll()}>Reset</button>
   </section>

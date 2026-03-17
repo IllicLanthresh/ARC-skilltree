@@ -281,6 +281,7 @@
         tabindex="0"
         aria-label={`Skill node ${node.name}`}
         style={`--accent:${accent};`}
+        data-node-id={node.id}
         onclick={(event) => handleNodeClick(event, node)}
         onkeydown={(event) => handleNodeKeydown(event, node)}
         oncontextmenu={(event) => handleNodeContextMenu(event, node)}

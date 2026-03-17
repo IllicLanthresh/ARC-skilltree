@@ -8,8 +8,14 @@
   import { buildStore } from '$lib/state/buildStore.svelte';
   import { viewport } from '$lib/stores/viewport.svelte';
   import { swipe } from '$lib/actions/swipe';
+  import { onMount } from 'svelte';
+  import TutorialOverlay from '$lib/components/TutorialOverlay.svelte';
+  import { tutorialStore } from '$lib/stores/tutorialStore.svelte';
 
   buildStore.initEffects();
+  onMount(() => {
+    tutorialStore.checkAutoShow();
+  });
 
   let hoveredNode = $state<TooltipData | null>(null);
 
@@ -80,11 +86,21 @@
   {/if}
 
   <footer class="footer">
-    {#if impossibleBuild}
-      <span class="warning">Build exceeds budget — remove some nodes or add expedition points.</span>
-    {:else}
-      <button class="kofi-btn" onclick={() => showKofi = true}>☕ Support me</button>
-    {/if}
+    <div class="footer-actions">
+      {#if impossibleBuild}
+        <span class="warning">Build exceeds budget — remove some nodes or add expedition points.</span>
+      {:else}
+        <button class="kofi-btn" onclick={() => showKofi = true}>☕ Support me</button>
+      {/if}
+      {#if !viewport.isMobile}
+        <button
+          class="tutorial-btn"
+          onclick={() => tutorialStore.start()}
+          data-testid="tutorial-relaunch"
+          aria-label="Restart tutorial"
+        >?</button>
+      {/if}
+    </div>
     <span class="attribution">ARC Raiders is a trademark of Embark Studios. Game assets belong to their respective owners.</span>
   </footer>
 </div>
@@ -104,7 +120,9 @@
   </div>
 {/if}
 
-{#if !viewport.isMobile}<Tooltip data={hoveredNode} />{/if}
+{#if !viewport.isMobile && !tutorialStore.isActive}<Tooltip data={hoveredNode} />{/if}
+
+{#if !viewport.isMobile}<TutorialOverlay />{/if}
 
 <style>
   .app-shell {
@@ -170,7 +188,11 @@
     gap: 1rem;
   }
 
-
+  .footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
   .kofi-btn {
     background: rgba(180, 120, 40, 0.15);
@@ -269,6 +291,28 @@
     .footer {
       padding-bottom: calc(0.2rem + env(safe-area-inset-bottom, 0px));
     }
+  }
+
+  .tutorial-btn {
+    background: rgba(100, 140, 200, 0.12);
+    border: 1px solid rgba(120, 160, 220, 0.3);
+    border-radius: 999px;
+    color: #8eb0d8;
+    font-size: 0.78rem;
+    font-weight: 700;
+    width: 1.7rem;
+    height: 1.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .tutorial-btn:hover {
+    background: rgba(120, 160, 220, 0.22);
+    border-color: rgba(140, 180, 240, 0.5);
+    color: #b0d0f0;
   }
 
 </style>

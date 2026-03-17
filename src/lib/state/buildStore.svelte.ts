@@ -11,6 +11,10 @@ let pathOverrides = $state<Map<string, number>>(new Map());
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
 let skipNextUrlSync = false;
 
+let savedWantedNodes: typeof wantedNodes | null = null;
+let savedExpeditionBonus: typeof expeditionBonus | null = null;
+let savedPathOverrides: typeof pathOverrides | null = null;
+
 const maxBudget = $derived(BASE_SKILL_POINTS + expeditionBonus);
 const computedPaths = $derived(computeMultiTargetPaths(wantedNodes, skillNodeMap, pathOverrides));
 const requiredNodes = $derived(new Set(computedPaths.requiredNodes));
@@ -153,6 +157,28 @@ function resetAll() {
   pathOverrides = new Map();
 }
 
+function saveState() {
+  savedWantedNodes = [...wantedNodes];
+  savedExpeditionBonus = expeditionBonus;
+  savedPathOverrides = new Map(pathOverrides);
+  resetAll();
+}
+
+function restoreState() {
+  if (savedWantedNodes === null) return;
+  wantedNodes = savedWantedNodes;
+  expeditionBonus = savedExpeditionBonus ?? 0;
+  pathOverrides = savedPathOverrides ?? new Map();
+  savedWantedNodes = null;
+  savedExpeditionBonus = null;
+  savedPathOverrides = null;
+}
+
+function applySnapshot(nodes: WantedNode[], overrides: Map<string, number>) {
+  wantedNodes = nodes;
+  pathOverrides = overrides;
+}
+
 export const buildStore = {
   get allocations() { return allocations; },
   get wantedNodes() { return wantedNodes; },
@@ -173,5 +199,8 @@ export const buildStore = {
   clearPathOverrides,
   setExpeditionBonus,
   resetAll,
+  saveState,
+  restoreState,
+  applySnapshot,
   initEffects,
 };
