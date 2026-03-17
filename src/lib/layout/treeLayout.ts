@@ -82,6 +82,7 @@ export function computeConnectionPaths(
   positions: Record<string, { x: number; y: number }>
 ): ConnectionPath[] {
   const paths: ConnectionPath[] = [];
+  const nodeMap = new Map(nodes.map(n => [n.id, n]));
 
   for (const node of nodes) {
     const to = positions[node.id];
@@ -91,10 +92,26 @@ export function computeConnectionPaths(
       const from = positions[prereqId];
       if (!from) continue;
 
-      const controlX = (from.x + to.x) / 2;
-      const lift = Math.max(26, Math.abs(to.x - from.x) * 0.18);
-      const controlY = Math.min(from.y, to.y) - lift;
-      const d = `M ${from.x} ${from.y} Q ${controlX} ${controlY} ${to.x} ${to.y}`;
+      // Get node sizes for radius calculations
+      const fromNode = nodeMap.get(prereqId);
+      const fromRadius = fromNode?.isMajor ? NODE_SIZES.major : NODE_SIZES.minor;
+      const toRadius = node.isMajor ? NODE_SIZES.major : NODE_SIZES.minor;
+
+      // Calculate edge endpoints offset to node boundary
+      // Tree flows bottom-to-top: parent has higher SVG y, child has lower SVG y
+      const startY = from.y - fromRadius; // top of parent
+      const endY = to.y + toRadius;       // bottom of child
+
+      // Calculate S-curve control points with vertical tangents
+      const verticalGap = startY - endY; // positive: parent is below child in SVG
+      const offset = Math.max(30, Math.min(verticalGap * 0.4, 80));
+      const cp1x = from.x;       // same X as start → exits straight up
+      const cp1y = startY - offset;
+      const cp2x = to.x;         // same X as end → enters straight down
+      const cp2y = endY + offset;
+
+      // Generate cubic Bézier path string
+      const d = `M ${from.x} ${startY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${endY}`;
 
       paths.push({ from: prereqId, to: node.id, d });
     }
