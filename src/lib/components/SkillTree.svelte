@@ -20,6 +20,7 @@
   } = $props<{ onHover?: HoverCallback; treeStats?: TreeStats; mobileActiveTree?: 'conditioning' | 'mobility' | 'survival' | null }>();
 
   let hoveredNodeId = $state<string | null>(null);
+  let lastHoverPos: { x: number; y: number } | null = null;
 
   const positions = computeNodePositions(skillNodes);
   const connections = computeConnectionPaths(skillNodes, positions);
@@ -156,6 +157,7 @@
 
   function emitHover(node: SkillNode, event: MouseEvent): void {
     hoveredNodeId = node.id;
+    lastHoverPos = { x: event.clientX, y: event.clientY };
 
     const level = allocations[node.id] ?? 0;
     const gate = checkGateThreshold(node.id, allocations, skillNodeMap);
@@ -174,8 +176,32 @@
 
   function clearHover(): void {
     hoveredNodeId = null;
+    lastHoverPos = null;
     onHover(null);
   }
+
+  // Re-emit tooltip when allocations/wanted/required change while hovering
+  $effect(() => {
+    const nodeId = hoveredNodeId;
+    if (!nodeId || !lastHoverPos) return;
+
+    const node = skillNodeMap.get(nodeId);
+    if (!node) return;
+
+    const level = allocations[nodeId] ?? 0;
+    const gate = checkGateThreshold(nodeId, allocations, skillNodeMap);
+
+    onHover({
+      node,
+      x: lastHoverPos.x,
+      y: lastHoverPos.y,
+      level,
+      canAllocate: true,
+      wanted: wantedSet.has(nodeId),
+      required: requiredNodes.has(nodeId),
+      gate,
+    });
+  });
 
   function getNodeClasses(node: SkillNode): string {
     const level = allocations[node.id] ?? 0;
