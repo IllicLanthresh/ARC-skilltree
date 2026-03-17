@@ -39,7 +39,7 @@
 
 </script>
 
-<svelte:head><title>ARC Skill Planner — Optimized Build Calculator for ARC Raiders</title></svelte:head>
+<svelte:head><title>ARC Raiders Skill Tree Planner — Raider Tools</title></svelte:head>
 
 <div class="app-shell">
   <RotateOverlay />

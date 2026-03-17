@@ -1,6 +1,6 @@
 {
-  "name": "ARC Skill Planner",
-  "short_name": "ARC Skills",
+  "name": "ARC Raiders Skill Tree Planner — Raider Tools",
+  "short_name": "ARC Skill Tree",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
