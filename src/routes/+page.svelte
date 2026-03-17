@@ -48,6 +48,7 @@
 <svelte:head><title>ARC Raiders Skill Tree Planner — Raider Tools</title></svelte:head>
 
 <div class="app-shell">
+  <span class="beta-badge">BETA</span>
   <RotateOverlay />
   <main class="content-grid">
     <section class="tree-canvas" aria-label="Skill tree canvas">
@@ -313,6 +314,26 @@
     background: rgba(120, 160, 220, 0.22);
     border-color: rgba(140, 180, 240, 0.5);
     color: #b0d0f0;
+  }
+
+  .beta-badge {
+    position: fixed;
+    top: 0.7rem;
+    left: 0.7rem;
+    z-index: 35;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(180, 210, 255, 0.55);
+    background: rgba(15, 25, 50, 0.5);
+    border: 1px solid rgba(100, 150, 220, 0.15);
+    border-radius: 4px;
+    padding: 0.18rem 0.5rem;
+    backdrop-filter: blur(6px);
+    pointer-events: none;
+    user-select: none;
   }
 
 </style>
