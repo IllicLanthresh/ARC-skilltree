@@ -15,7 +15,17 @@
   buildStore.initEffects();
   onMount(() => {
     tutorialStore.checkAutoShow();
+    if (viewport.isMobile && typeof localStorage !== 'undefined' && !localStorage.getItem('arc-mobile-banner-dismissed')) {
+      showMobileBanner = true;
+    }
   });
+
+  function dismissMobileBanner() {
+    showMobileBanner = false;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('arc-mobile-banner-dismissed', 'true');
+    }
+  }
 
   let hoveredNode = $state<TooltipData | null>(null);
 
@@ -42,6 +52,7 @@
   );
 
   let showKofi = $state(false);
+  let showMobileBanner = $state(false);
 
 </script>
 
@@ -49,6 +60,16 @@
 
 <div class="app-shell">
   <span class="beta-badge">BETA</span>
+  {#if showMobileBanner}
+    <div class="mobile-banner">
+      <div class="mobile-banner-text">
+        <p>For the best experience, visit on desktop.</p>
+        <p>The interactive tutorial is only available there and it's worth taking. It explains how the optimizer works and what makes this planner different from ordinary skill tree tools.</p>
+        <p>Mobile support is still a work in progress.</p>
+      </div>
+      <button class="mobile-banner-close" onclick={dismissMobileBanner} aria-label="Dismiss">✕</button>
+    </div>
+  {/if}
   <RotateOverlay />
   <main class="content-grid">
     <section class="tree-canvas" aria-label="Skill tree canvas">
@@ -83,6 +104,7 @@
     <BottomSheet
       activeTree={mobileActiveTree}
       onTreeChange={(t) => { mobileActiveTree = t; }}
+      onShowKofi={() => { showKofi = true; }}
     />
   {/if}
 
@@ -292,11 +314,11 @@
 
   @media (max-width: 767px) {
     .app-shell {
-      padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: calc(36px + env(safe-area-inset-bottom, 0px));
     }
 
     .footer {
-      padding-bottom: calc(0.2rem + env(safe-area-inset-bottom, 0px));
+      display: none;
     }
   }
 
@@ -358,6 +380,46 @@
     backdrop-filter: blur(6px);
     pointer-events: none;
     user-select: none;
+  }
+
+  .mobile-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    background: linear-gradient(160deg, rgba(20, 40, 80, 0.95), rgba(12, 24, 50, 0.97));
+    border-bottom: 1px solid rgba(100, 150, 220, 0.25);
+    backdrop-filter: blur(8px);
+  }
+
+  .mobile-banner-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .mobile-banner-text p {
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.45;
+    color: #b8cfe8;
+  }
+
+  .mobile-banner-close {
+    background: transparent;
+    border: none;
+    color: #7a95b8;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    flex-shrink: 0;
   }
 
 </style>

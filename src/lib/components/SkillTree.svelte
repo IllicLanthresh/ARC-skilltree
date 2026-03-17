@@ -19,7 +19,6 @@
   } = $props<{ onHover?: HoverCallback; treeStats?: TreeStats; mobileActiveTree?: 'conditioning' | 'mobility' | 'survival' | null }>();
 
   let hoveredNodeId = $state<string | null>(null);
-  let activeStepper = $state<string | null>(null);
 
   const positions = computeNodePositions(skillNodes);
   const connections = computeConnectionPaths(skillNodes, positions);
@@ -77,7 +76,6 @@
     const newTargetX = TREE_VIEW_X[tree as 'conditioning' | 'mobility' | 'survival'];
     untrack(() => {
       targetX = newTargetX;
-      activeStepper = null;
       if (!isAnimating) animateToTarget();
     });
   });
@@ -136,28 +134,12 @@
 
   function handleNodeClick(event: MouseEvent, node: SkillNode): void {
     event.preventDefault();
-    if (mobileActiveTree !== null) {
-      // Mobile: toggle stepper
-      activeStepper = activeStepper === node.id ? null : node.id;
-      return;
-    }
-    // Desktop: allocate directly (unchanged)
     buildStore.incrementWanted(node.id);
   }
 
   function handleNodeContextMenu(event: MouseEvent, node: SkillNode): void {
     event.preventDefault();
     buildStore.decrementWanted(node.id);
-  }
-
-  function handleStepperAdd(nodeId: string, e: Event): void {
-    e.stopPropagation();
-    buildStore.incrementWanted(nodeId);
-  }
-
-  function handleStepperRemove(nodeId: string, e: Event): void {
-    e.stopPropagation();
-    buildStore.decrementWanted(nodeId);
   }
 
   function handleNodeKeydown(event: KeyboardEvent, node: SkillNode): void {
@@ -253,17 +235,6 @@
     {/each}
   </g>
 
-  {#if activeStepper !== null}
-    <rect
-      x="0" y="0" width="1200" height="1040"
-      fill="transparent"
-      role="presentation"
-      onclick={() => activeStepper = null}
-      onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') activeStepper = null; }}
-      style="cursor: default;"
-    />
-  {/if}
-
   <g class="nodes">
     {#each skillNodes as node (node.id)}
       {@const pos = positions[node.id]}
@@ -326,6 +297,21 @@
           </g>
         {/if}
 
+        {#if mobileActiveTree !== null && wantedLevelMap.has(node.id)}
+          <g
+            class="mobile-minus"
+            transform={`translate(${-radius - 8} ${-radius + 8})`}
+            onclick={(e: MouseEvent) => { e.stopPropagation(); buildStore.decrementWanted(node.id); }}
+            onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); buildStore.decrementWanted(node.id); } }}
+            role="button"
+            tabindex="0"
+            aria-label={`Decrease ${node.name} level`}
+          >
+            <circle r="12" />
+            <text x="0" y="1" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="currentColor">−</text>
+          </g>
+        {/if}
+
         {#if gateProgress && !gateProgress.unlocked}
           <g class="gate-counter" transform={`translate(${ringRadius + 4} 0)`}>
             <rect x="-12" y="-8" width="24" height="16" rx="8" />
@@ -358,50 +344,6 @@
           </g>
         {/if}
       </g>
-
-      {#if activeStepper === node.id && mobileActiveTree !== null}
-        {@const stepperColor = TREE_COLORS[node.category.toUpperCase() as keyof typeof TREE_COLORS] || '#8ea8cc'}
-        <g
-          transform={`translate(${pos.x - 48}, ${pos.y})`}
-          onclick={(e: MouseEvent) => handleStepperRemove(node.id, e)}
-          onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') handleStepperRemove(node.id, e); }}
-          role="button"
-          tabindex="0"
-          aria-label={`Decrease ${node.name} level`}
-          style="cursor: pointer;"
-          class="stepper-btn"
-        >
-          <circle r="20" fill="rgba(9,13,26,0.92)" stroke={stepperColor} stroke-width="1.5" />
-          <text
-            text-anchor="middle"
-            dominant-baseline="central"
-            fill={stepperColor}
-            font-size="22"
-            font-weight="bold"
-            pointer-events="none"
-          >−</text>
-        </g>
-        <g
-          transform={`translate(${pos.x + 48}, ${pos.y})`}
-          onclick={(e: MouseEvent) => handleStepperAdd(node.id, e)}
-          onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') handleStepperAdd(node.id, e); }}
-          role="button"
-          tabindex="0"
-          aria-label={`Increase ${node.name} level`}
-          style="cursor: pointer;"
-          class="stepper-btn"
-        >
-          <circle r="20" fill="rgba(9,13,26,0.92)" stroke={stepperColor} stroke-width="1.5" />
-          <text
-            text-anchor="middle"
-            dominant-baseline="central"
-            fill={stepperColor}
-            font-size="22"
-            font-weight="bold"
-            pointer-events="none"
-          >+</text>
-        </g>
-      {/if}
     {/each}
   </g>
 
@@ -656,8 +598,23 @@
     fill: #e8f4ff;
   }
 
-  .stepper-btn {
-    user-select: none;
+  .mobile-minus {
+    cursor: pointer;
+  }
+
+  .mobile-minus circle {
+    fill: rgba(9, 13, 26, 0.9);
+    stroke: rgba(255, 100, 100, 0.5);
+    stroke-width: 1.5;
+  }
+
+  .mobile-minus text {
+    fill: #ff8a8a;
+    pointer-events: none;
+  }
+
+  .mobile-minus:active circle {
+    fill: rgba(255, 80, 80, 0.25);
   }
 
   @keyframes wantedPulse {
