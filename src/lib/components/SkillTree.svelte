@@ -421,6 +421,13 @@
     cursor: pointer;
     transform-origin: center;
     transition: opacity 150ms ease;
+    outline: none;
+  }
+
+  .skill-node:focus-visible {
+    outline: 2px solid rgba(140, 180, 255, 0.6);
+    outline-offset: 4px;
+    border-radius: 50%;
   }
 
   .skill-node.gate-locked {
