@@ -172,7 +172,7 @@
     right: 1rem;
     z-index: 40;
     width: 18rem;
-    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
     overflow: visible;
     background: linear-gradient(160deg, rgba(9, 13, 26, 0.92), rgba(12, 18, 34, 0.96));
     backdrop-filter: blur(12px);
@@ -190,7 +190,7 @@
     flex-direction: column;
     gap: 0.6rem;
     overflow-y: auto;
-    max-height: calc(100vh - 2rem - 1.3rem);
+    max-height: calc(100dvh - 2rem - 1.3rem);
   }
 
   .panel.drawer {

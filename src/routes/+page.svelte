@@ -155,7 +155,7 @@
 
 <style>
   .app-shell {
-    height: 100%;
+    height: 100dvh;
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
     gap: 1rem;
