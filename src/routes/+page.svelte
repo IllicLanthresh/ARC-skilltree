@@ -101,6 +101,12 @@
           aria-label="Restart tutorial"
         >?</button>
       {/if}
+      <a
+        class="report-btn"
+        href="https://github.com/IllicLanthresh/ARC-skilltree/issues/new?title=%5BBug%5D+&labels=bug"
+        target="_blank"
+        rel="noopener noreferrer"
+      >Report bug</a>
     </div>
     <span class="attribution">ARC Raiders is a trademark of Embark Studios. Game assets belong to their respective owners.</span>
   </footer>
@@ -314,6 +320,24 @@
     background: rgba(120, 160, 220, 0.22);
     border-color: rgba(140, 180, 240, 0.5);
     color: #b0d0f0;
+  }
+
+  .report-btn {
+    background: transparent;
+    border: 1px solid rgba(120, 160, 220, 0.2);
+    border-radius: 999px;
+    color: #7a95b8;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.22rem 0.6rem;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+  .report-btn:hover {
+    background: rgba(120, 160, 220, 0.12);
+    border-color: rgba(140, 180, 240, 0.4);
+    color: #a0c0e0;
   }
 
   .beta-badge {
