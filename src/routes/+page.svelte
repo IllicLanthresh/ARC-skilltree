@@ -59,6 +59,7 @@
 <svelte:head><title>ARC Raiders Skill Tree Planner — Raider Tools</title></svelte:head>
 
 <div class="app-shell">
+  <div class="status-bar-tint" aria-hidden="true"></div>
   <span class="beta-badge">BETA</span>
   {#if showMobileBanner}
     <div class="mobile-banner">
@@ -420,6 +421,18 @@
     padding: 0;
     line-height: 1;
     flex-shrink: 0;
+  }
+
+  .status-bar-tint {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: env(safe-area-inset-top, 3px);
+    min-height: 3px;
+    background-color: #0a0e1a;
+    z-index: 9999;
+    pointer-events: none;
   }
 
 </style>
