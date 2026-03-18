@@ -431,7 +431,7 @@
   }
 
   .skill-node.gate-locked {
-    cursor: not-allowed;
+    cursor: pointer;
   }
 
   .skill-node .gate-ring-track {

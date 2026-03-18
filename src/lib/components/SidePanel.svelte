@@ -159,6 +159,7 @@
         </div>
         <span class="exp-total">{BASE_SKILL_POINTS} + {buildStore.expeditionBonus} = {maxBudget}</span>
       </div>
+      <span class="exp-hint">Each expedition grants up to 5 bonus points.</span>
     </section>
 
     <section class="block actions-block" data-tutorial-target="actions-section">
@@ -388,6 +389,12 @@
   .exp-total {
     color: #8a9fb8;
     font-size: 0.7rem;
+  }
+
+  .exp-hint {
+    font-size: 0.64rem;
+    color: #607a96;
+    font-style: italic;
   }
 
   .actions-block {
