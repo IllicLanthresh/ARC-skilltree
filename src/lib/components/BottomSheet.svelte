@@ -397,7 +397,7 @@
   }
 
   .exp-hint {
-    font-size: 0.64rem;
+    font-size: 0.72rem;
     color: #607a96;
     font-style: italic;
   }
