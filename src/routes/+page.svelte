@@ -56,11 +56,36 @@
 
 </script>
 
-<svelte:head><title>ARC Raiders Skill Tree Planner — Raider Tools</title></svelte:head>
+<svelte:head>
+  <title>ARC Raiders Skill Tree Planner — Raider Tools</title>
+  {@html `<script type="application/ld+json">${JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "ARC Raiders Skill Tree Planner",
+    "description": "The only ARC Raiders skill planner that automatically optimizes your build. Pick the skills you want, and the pathfinder calculates the cheapest route through the tree — no wasted points.",
+    "url": "https://skilltree.raidertools.net",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Illic Lanthresh"
+    },
+    "about": {
+      "@type": "VideoGame",
+      "name": "ARC Raiders"
+    }
+  })}</script>`}
+</svelte:head>
 
 <div class="app-shell">
   <div class="status-bar-tint" aria-hidden="true"></div>
   <span class="beta-badge">BETA</span>
+  <h1 class="seo-h1">ARC Raiders Skill Tree Planner</h1>
   {#if showMobileBanner}
     <div class="mobile-banner">
       <div class="mobile-banner-text">
@@ -381,6 +406,21 @@
     backdrop-filter: blur(6px);
     pointer-events: none;
     user-select: none;
+  }
+
+  .seo-h1 {
+    position: fixed;
+    top: 0.7rem;
+    left: 5.5rem;
+    z-index: 35;
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: rgba(180, 210, 255, 0.30);
+    pointer-events: none;
+    user-select: none;
+    margin: 0;
+    white-space: nowrap;
   }
 
   .mobile-banner {

@@ -7,6 +7,9 @@ export default {
     }),
     paths: {
       base: ''
+    },
+    prerender: {
+      origin: 'https://skilltree.raidertools.net'
     }
   }
 };
