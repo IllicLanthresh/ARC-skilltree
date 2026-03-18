@@ -14,7 +14,7 @@
 
   buildStore.initEffects();
   onMount(() => {
-    tutorialStore.checkAutoShow();
+    if (!viewport.isMobile && !viewport.isTouch) tutorialStore.checkAutoShow();
     if (viewport.isMobile && typeof localStorage !== 'undefined' && !localStorage.getItem('arc-mobile-banner-dismissed')) {
       showMobileBanner = true;
     }
