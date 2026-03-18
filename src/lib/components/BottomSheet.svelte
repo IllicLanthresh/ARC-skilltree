@@ -22,7 +22,7 @@
 
   let openAmount = $state(0);
   let isDragging = $state(false);
-  let shareLabel = $state('Share Build');
+  let shareLabel = $state('Share');
 
   let touchStartY = 0;
   let startOpenAmount = 0;
@@ -82,6 +82,20 @@
   async function copyShareUrl(): Promise<void> {
     if (typeof window === 'undefined') return;
     const url = window.location.href;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'ARC Raiders Skill Tree', url });
+        trackEvent('shared_build', 'Shared Build');
+        shareLabel = 'Shared!';
+        setTimeout(() => { shareLabel = 'Share'; }, 1500);
+      } catch {
+        // User cancelled — do nothing
+      }
+      return;
+    }
+
+    // Fallback only if share API not available at all
     let copied = false;
     try {
       await navigator.clipboard.writeText(url);
@@ -98,7 +112,7 @@
     }
     if (copied) trackEvent('shared_build', 'Shared Build');
     shareLabel = copied ? 'Copied!' : 'Copy failed';
-    setTimeout(() => { shareLabel = 'Share Build'; }, 1500);
+    setTimeout(() => { shareLabel = 'Share'; }, 1500);
   }
 </script>
 

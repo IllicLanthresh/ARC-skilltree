@@ -14,7 +14,7 @@
   const totalCost = $derived(breakdown.wantedCost + breakdown.prereqCost + fillerTotal);
   const feasible = $derived(totalCost <= maxBudget);
 
-  let shareLabel = $state('Share Build');
+  let shareLabel = $state('Share');
 
   let panelEl: HTMLElement | null = $state(null);
   let isOverlapping = $state(false);
@@ -51,10 +51,21 @@
 
   async function copyShareUrl(): Promise<void> {
     if (typeof window === 'undefined') return;
-
     const url = window.location.href;
-    let copied = false;
 
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'ARC Raiders Skill Tree', url });
+        trackEvent('shared_build', 'Shared Build');
+        shareLabel = 'Shared!';
+        setTimeout(() => { shareLabel = 'Share'; }, 1500);
+      } catch {
+        // User cancelled — do nothing
+      }
+      return;
+    }
+
+    let copied = false;
     try {
       await navigator.clipboard.writeText(url);
       copied = true;
@@ -68,10 +79,9 @@
       copied = document.execCommand('copy');
       document.body.removeChild(textarea);
     }
-
     if (copied) trackEvent('shared_build', 'Shared Build');
     shareLabel = copied ? 'Copied!' : 'Copy failed';
-    setTimeout(() => { shareLabel = 'Share Build'; }, 1500);
+    setTimeout(() => { shareLabel = 'Share'; }, 1500);
   }
 </script>
 
